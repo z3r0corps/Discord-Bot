@@ -23,6 +23,10 @@ client.once(Events.ClientReady, async readyClient => {
     console.log(`📋 Bot ID: ${readyClient.user.id}`);
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
+    // Set custom activity
+    client.user.setActivity('Playing with Minors', { type: 'PLAYING' });
+    console.log('🎮 Set bot activity to "Playing with Minors"');
+    
     // Set up verification message
     await setupVerificationMessage();
     
@@ -190,11 +194,24 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
                 return;
             }
 
-            // Add user to database
+            // Add user to database first
             await database.addUser(user.id, user.tag);
+            console.log(`📊 Added ${user.tag} to database`);
 
             // Assign verified role
-            await member.roles.add(verifiedRole);
+            try {
+                await member.roles.add(verifiedRole);
+                console.log(`🎭 Assigned ${config.verifiedRoleName} role to ${user.tag}`);
+            } catch (error) {
+                console.error('❌ Error assigning role:', error);
+                // Send error message to user
+                try {
+                    await user.send('❌ Verification failed due to permission error. Please contact an administrator.');
+                } catch (dmError) {
+                    console.error('❌ Could not send DM to user:', dmError);
+                }
+                return;
+            }
             
             // Hide the verification channel from the user
             try {
@@ -209,8 +226,22 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
             // Send welcome message
             const welcomeChannel = client.channels.cache.get(config.welcomeChannelId);
             if (welcomeChannel) {
-                const welcomeMessage = `Welcome ${member.user}! 🎉 You've been verified and can now access the server!`;
+                const welcomeMessage = `🎉 **Welcome ${member.user}!** You've been verified and can now access the server!`;
                 await welcomeChannel.send(welcomeMessage);
+            }
+
+            // Send DM confirmation to user
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setTitle('✅ Verification Successful!')
+                    .setDescription('You have been successfully verified and can now access all channels in the server!')
+                    .setColor(0x00ff00)
+                    .setTimestamp();
+                
+                await user.send({ embeds: [dmEmbed] });
+                console.log(`📧 Sent verification confirmation DM to ${user.tag}`);
+            } catch (dmError) {
+                console.log(`⚠️ Could not send DM to ${user.tag} (DMs may be disabled)`);
             }
 
             console.log(`✅ User ${user.tag} has been verified and given the ${config.verifiedRoleName} role`);
@@ -346,6 +377,48 @@ client.on(Events.MessageCreate, async (message) => {
         } catch (error) {
             console.error('❌ Error getting user profile:', error);
             await message.reply('❌ Error retrieving user profile.');
+        }
+    }
+    
+    // Check bot permissions command
+    if (message.content === '!check-permissions' && message.member.permissions.has('Administrator')) {
+        try {
+            const guild = message.guild;
+            const botMember = guild.members.cache.get(client.user.id);
+            const verifiedRole = guild.roles.cache.get(config.verifiedRoleId);
+            
+            const embed = new EmbedBuilder()
+                .setTitle('🔧 Bot Permission Check')
+                .setColor(0x0099ff)
+                .setTimestamp();
+            
+            // Check role hierarchy
+            const botRolePosition = botMember.roles.highest.position;
+            const verifiedRolePosition = verifiedRole ? verifiedRole.position : -1;
+            
+            embed.addFields(
+                { name: 'Bot Role Position', value: `${botRolePosition}`, inline: true },
+                { name: 'Verified Role Position', value: `${verifiedRolePosition}`, inline: true },
+                { name: 'Can Manage Roles', value: botMember.permissions.has('ManageRoles') ? '✅ Yes' : '❌ No', inline: true },
+                { name: 'Can Manage Channels', value: botMember.permissions.has('ManageChannels') ? '✅ Yes' : '❌ No', inline: true },
+                { name: 'Role Hierarchy', value: botRolePosition > verifiedRolePosition ? '✅ Correct' : '❌ Bot role too low', inline: true }
+            );
+            
+            if (botRolePosition <= verifiedRolePosition) {
+                embed.setDescription('⚠️ **ISSUE FOUND**: Bot role is too low in hierarchy. Move "Agent Zero" role above "Verified" role.');
+                embed.setColor(0xff0000);
+            } else if (!botMember.permissions.has('ManageRoles')) {
+                embed.setDescription('⚠️ **ISSUE FOUND**: Bot missing "Manage Roles" permission. Re-invite bot with correct permissions.');
+                embed.setColor(0xff0000);
+            } else {
+                embed.setDescription('✅ All permissions look good!');
+                embed.setColor(0x00ff00);
+            }
+            
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('❌ Error checking permissions:', error);
+            await message.reply('❌ Error checking bot permissions.');
         }
     }
     

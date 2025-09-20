@@ -179,6 +179,10 @@ Edit `config.json` to change the welcome and goodbye channels:
 - `!profiles` - List all user profile files (Admin only)
   - Shows all user profile files in the users folder
 
+- `!check-permissions` - Check bot permissions (Admin only)
+  - Verifies bot has correct permissions and role hierarchy
+  - Helps troubleshoot verification issues
+
 ## Database & User Profiles
 
 The bot uses a local SQLite database (`users.db`) to track:
