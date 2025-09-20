@@ -61,6 +61,13 @@ class Database {
     createUserProfileFile(discordId, username) {
         try {
             const usersDir = path.join(__dirname, 'users');
+            
+            // Ensure users directory exists
+            if (!fs.existsSync(usersDir)) {
+                fs.mkdirSync(usersDir, { recursive: true });
+                console.log('✅ Created users directory');
+            }
+            
             const fileName = `${discordId}_${username.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
             const filePath = path.join(usersDir, fileName);
             

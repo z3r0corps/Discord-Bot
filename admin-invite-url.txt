@@ -1,0 +1,13 @@
+ADMIN BOT INVITE URL
+====================
+
+Use this URL to invite your bot with Administrator permissions:
+
+https://discord.com/api/oauth2/authorize?client_id=1418975556669800599&permissions=8&scope=bot%20applications.commands
+
+This URL includes:
+- Administrator permission (permissions=8)
+- Bot scope
+- Applications commands scope
+
+Copy this URL and open it in your browser to invite the bot with full admin rights.

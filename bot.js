@@ -23,11 +23,9 @@ client.once(Events.ClientReady, async readyClient => {
     console.log(`📋 Bot ID: ${readyClient.user.id}`);
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
-    // Set custom activity (wait a moment for bot to be fully ready)
-    setTimeout(() => {
-        client.user.setActivity('with Minors', { type: 'PLAYING' });
-        console.log('🎮 Set bot activity to "Playing with Minors"');
-    }, 2000);
+    // Set custom activity immediately
+    client.user.setActivity('with Minors', { type: 'PLAYING' });
+    console.log('🎮 Set bot activity to "Playing with Minors"');
     
     // Set up verification message
     await setupVerificationMessage();
@@ -48,7 +46,7 @@ async function setupVerificationMessage() {
 
         // Check if verification message already exists
         const messages = await verificationChannel.messages.fetch({ limit: 10 });
-        const existingMessage = messages.find(msg => msg.author.id === client.user.id && msg.embeds.length > 0);
+        const existingMessage = messages.find(msg => msg.author.id === client.user.id && msg.content.includes('🔐 Please verify'));
 
         if (existingMessage) {
             console.log('✅ Verification message already exists');
@@ -82,56 +80,71 @@ async function setupChannelPermissions() {
         const everyoneRole = verificationChannel.guild.roles.everyone;
         
         // Set verification channel permissions - everyone can see and send messages
-        await verificationChannel.permissionOverwrites.edit(everyoneRole, {
-            ViewChannel: true,
-            SendMessages: false, // Users can't send messages, only react
-            ReadMessageHistory: true
-        });
-        
-        console.log('✅ Verification channel permissions set up');
+        try {
+            await verificationChannel.permissionOverwrites.edit(everyoneRole, {
+                ViewChannel: true,
+                SendMessages: false, // Users can't send messages, only react
+                ReadMessageHistory: true
+            });
+            console.log('✅ Verification channel permissions set up');
+        } catch (error) {
+            console.error('❌ Error setting verification channel permissions:', error);
+        }
         
         // Set other channels to be hidden from @everyone by default
         // Only verified users (with the Verified role) will see them
         if (welcomeChannel) {
-            await welcomeChannel.permissionOverwrites.edit(everyoneRole, {
-                ViewChannel: false
-            });
-            console.log('✅ Welcome channel hidden from unverified users');
+            try {
+                await welcomeChannel.permissionOverwrites.edit(everyoneRole, {
+                    ViewChannel: false
+                });
+                console.log('✅ Welcome channel hidden from unverified users');
+            } catch (error) {
+                console.error('❌ Error setting welcome channel permissions:', error);
+            }
         }
         
         if (goodbyeChannel) {
-            await goodbyeChannel.permissionOverwrites.edit(everyoneRole, {
-                ViewChannel: false
-            });
-            console.log('✅ Goodbye channel hidden from unverified users');
+            try {
+                await goodbyeChannel.permissionOverwrites.edit(everyoneRole, {
+                    ViewChannel: false
+                });
+                console.log('✅ Goodbye channel hidden from unverified users');
+            } catch (error) {
+                console.error('❌ Error setting goodbye channel permissions:', error);
+            }
         }
         
         // Set up Verified role permissions for all channels
         const verifiedRole = verificationChannel.guild.roles.cache.get(config.verifiedRoleId);
         if (verifiedRole) {
-            // Verification channel - verified users can't see it
-            await verificationChannel.permissionOverwrites.edit(verifiedRole, {
-                ViewChannel: false
-            });
-            
-            // Welcome and goodbye channels - verified users can see them
-            if (welcomeChannel) {
-                await welcomeChannel.permissionOverwrites.edit(verifiedRole, {
-                    ViewChannel: true,
-                    SendMessages: true,
-                    ReadMessageHistory: true
+            try {
+                // Verification channel - verified users can't see it
+                await verificationChannel.permissionOverwrites.edit(verifiedRole, {
+                    ViewChannel: false
                 });
+                
+                // Welcome and goodbye channels - verified users can see them
+                if (welcomeChannel) {
+                    await welcomeChannel.permissionOverwrites.edit(verifiedRole, {
+                        ViewChannel: true,
+                        SendMessages: true,
+                        ReadMessageHistory: true
+                    });
+                }
+                
+                if (goodbyeChannel) {
+                    await goodbyeChannel.permissionOverwrites.edit(verifiedRole, {
+                        ViewChannel: true,
+                        SendMessages: true,
+                        ReadMessageHistory: true
+                    });
+                }
+                
+                console.log('✅ Verified role permissions set up');
+            } catch (error) {
+                console.error('❌ Error setting verified role permissions:', error);
             }
-            
-            if (goodbyeChannel) {
-                await goodbyeChannel.permissionOverwrites.edit(verifiedRole, {
-                    ViewChannel: true,
-                    SendMessages: true,
-                    ReadMessageHistory: true
-                });
-            }
-            
-            console.log('✅ Verified role permissions set up');
         } else {
             console.log('⚠️ Verified role not found. Please create a "Verified" role.');
         }
@@ -221,8 +234,13 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
             // Send welcome message
             const welcomeChannel = client.channels.cache.get(config.welcomeChannelId);
             if (welcomeChannel) {
-                const welcomeMessage = `🎉 **Welcome ${member.user}!** You've been verified and can now access the server!`;
-                await welcomeChannel.send(welcomeMessage);
+                try {
+                    const welcomeMessage = `🎉 **Welcome ${member.user}!** You've been verified and can now access the server!`;
+                    await welcomeChannel.send(welcomeMessage);
+                    console.log(`✅ Sent welcome message for ${member.user.tag}`);
+                } catch (error) {
+                    console.error('❌ Error sending welcome message:', error);
+                }
             }
 
             // Send DM confirmation to user
@@ -262,11 +280,15 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
         const goodbyeMessage = `Seeya ${member.user}! 👋`;
         
-        await goodbyeChannel.send(goodbyeMessage);
-        console.log(`✅ Sent goodbye message for ${member.user.tag} in ${goodbyeChannel.name}`);
+        try {
+            await goodbyeChannel.send(goodbyeMessage);
+            console.log(`✅ Sent goodbye message for ${member.user.tag} in ${goodbyeChannel.name}`);
+        } catch (error) {
+            console.error('❌ Error sending goodbye message:', error);
+        }
         
     } catch (error) {
-        console.error('❌ Error sending goodbye message:', error);
+        console.error('❌ Error handling member removal:', error);
     }
 });
 
