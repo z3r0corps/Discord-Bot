@@ -166,22 +166,14 @@ Edit `config.json` to change the welcome and goodbye channels:
 2. Right-click on the channel you want
 3. Click "Copy ID"
 
-## Commands
+## Bot Features
 
-- `!stats` - View server statistics (Admin only)
-  - Shows total verified users
-  - Displays recent verifications
-
-- `!profile <user_id>` - View specific user profile (Admin only)
-  - Shows detailed information about a verified user
-  - Example: `!profile 123456789012345678`
-
-- `!profiles` - List all user profile files (Admin only)
-  - Shows all user profile files in the users folder
-
-- `!check-permissions` - Check bot permissions (Admin only)
-  - Verifies bot has correct permissions and role hierarchy
-  - Helps troubleshoot verification issues
+This bot has **no commands** - it operates automatically:
+- ✅ **Automatic verification**: Users react to verify
+- ✅ **Automatic role assignment**: Gives "Verified" role
+- ✅ **Automatic channel management**: Hides/shows channels based on verification
+- ✅ **Automatic database tracking**: Saves user profiles
+- ✅ **Automatic welcome/goodbye messages**: Posts when users join/leave
 
 ## Database & User Profiles
 
