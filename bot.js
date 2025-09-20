@@ -1,6 +1,8 @@
 const { Client, GatewayIntentBits, Events, EmbedBuilder } = require('discord.js');
 const config = require('./config.json');
 const Database = require('./database');
+const ForexScraper = require('./forex-scraper');
+const cron = require('node-cron');
 require('dotenv').config();
 
 // Create a new client instance
@@ -14,8 +16,9 @@ const client = new Client({
     ]
 });
 
-// Initialize database
+// Initialize database and forex scraper
 const database = new Database();
+const forexScraper = new ForexScraper();
 
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, async readyClient => {
@@ -32,6 +35,9 @@ client.once(Events.ClientReady, async readyClient => {
     
     // Set up channel permissions
     await setupChannelPermissions();
+    
+    // Set up forex news scheduler
+    setupForexNewsScheduler();
 });
 
 // Set up verification message
@@ -158,6 +164,56 @@ async function setupChannelPermissions() {
         
     } catch (error) {
         console.error('❌ Error setting up channel permissions:', error);
+    }
+}
+
+// Set up forex news scheduler
+function setupForexNewsScheduler() {
+    // Schedule forex news every day at 6:00 AM EST
+    // Cron format: minute hour day month dayOfWeek
+    // 0 6 * * * = Every day at 6:00 AM
+    cron.schedule('0 6 * * *', async () => {
+        console.log('📰 Scheduled forex news check starting...');
+        await postForexNews();
+    }, {
+        timezone: "America/New_York" // EST timezone
+    });
+    
+    console.log('⏰ Forex news scheduler set for 6:00 AM EST daily');
+}
+
+// Post forex news to the news channel
+async function postForexNews() {
+    try {
+        const newsChannel = client.channels.cache.get(config.newsChannelId);
+        
+        if (!newsChannel) {
+            console.error('❌ News channel not found!');
+            return;
+        }
+
+        console.log('📊 Fetching forex news...');
+        const newsData = await forexScraper.getTodaysNews();
+        
+        const embed = new EmbedBuilder()
+            .setTitle(newsData.title)
+            .setDescription(newsData.description)
+            .setColor(newsData.color)
+            .setTimestamp();
+
+        if (newsData.fields && newsData.fields.length > 0) {
+            embed.addFields(newsData.fields);
+        }
+
+        if (newsData.footer) {
+            embed.setFooter({ text: newsData.footer.text });
+        }
+
+        await newsChannel.send({ embeds: [embed] });
+        console.log('✅ Forex news posted successfully');
+        
+    } catch (error) {
+        console.error('❌ Error posting forex news:', error);
     }
 }
 
@@ -342,7 +398,21 @@ process.on('SIGTERM', () => {
     process.exit(0);
 });
 
-// Bot has no commands - it only handles verification reactions
+// Add manual forex news command for testing
+client.on(Events.MessageCreate, async (message) => {
+    if (message.author.bot) return;
+    
+    // Manual forex news command (admin only)
+    if (message.content === '!forex-news' && message.member.permissions.has('Administrator')) {
+        try {
+            await message.reply('📊 Fetching forex news...');
+            await postForexNews();
+        } catch (error) {
+            console.error('❌ Error in manual forex news command:', error);
+            await message.reply('❌ Error fetching forex news.');
+        }
+    }
+});
 
 // Login to Discord with your client's token
 client.login(process.env.DISCORD_BOT_TOKEN);

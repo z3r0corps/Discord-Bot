@@ -9,6 +9,7 @@ A simple Discord bot that automatically welcomes new members and says goodbye wh
 - 🔐 **Verification System**: Red verification message with reaction-based verification to prevent bot spam
 - 📊 **User Database**: Local SQLite database to track verified users
 - 🎭 **Role Assignment**: Automatically assigns "Verified" role after verification
+- 📰 **Forex News**: Daily high-impact USD news from Forex Factory at 6 AM EST
 - ⚙️ **Easy Configuration**: Simple config file for channel IDs
 - 🛡️ **Error Handling**: Robust error handling and logging
 
@@ -168,12 +169,14 @@ Edit `config.json` to change the welcome and goodbye channels:
 
 ## Bot Features
 
-This bot has **no commands** - it operates automatically:
+This bot operates automatically with one admin command:
 - ✅ **Automatic verification**: Users react to verify
 - ✅ **Automatic role assignment**: Gives "Verified" role
 - ✅ **Automatic channel management**: Hides/shows channels based on verification
 - ✅ **Automatic database tracking**: Saves user profiles
 - ✅ **Automatic welcome/goodbye messages**: Posts when users join/leave
+- ✅ **Automatic forex news**: Daily high-impact USD news at 6 AM EST
+- ✅ **Manual forex news**: `!forex-news` command for testing (Admin only)
 
 ## Database & User Profiles
 
