@@ -88,6 +88,63 @@ pm2 start ecosystem.config.js
 pm2 save
 ```
 
+## 🚀 Maximum Uptime Setup
+
+### Automatic Startup on Windows Boot
+
+1. **Run the setup script as Administrator**:
+   ```bash
+   # Right-click and "Run as administrator"
+   setup-windows-startup.bat
+   ```
+
+2. **Manual startup script**:
+   ```bash
+   # Double-click to start the bot
+   start-bot.bat
+   ```
+
+### Health Monitoring
+
+1. **Start health monitor**:
+   ```bash
+   npm run monitor
+   ```
+
+2. **Manual monitoring script**:
+   ```bash
+   # Continuous monitoring with auto-restart
+   monitor-and-restart.bat
+   ```
+
+### PM2 Commands
+
+```bash
+# Start bot
+npm run pm2:start
+
+# Stop bot
+npm run pm2:stop
+
+# Restart bot
+npm run pm2:restart
+
+# Check status
+npm run pm2:status
+
+# View logs
+npm run pm2:logs
+```
+
+### Auto-Recovery Features
+
+- ✅ **Internet outage recovery**: Bot automatically reconnects when internet returns
+- ✅ **Process crash recovery**: PM2 automatically restarts crashed processes
+- ✅ **Memory leak protection**: Auto-restart if memory usage exceeds 1GB
+- ✅ **Graceful shutdown**: Proper cleanup on system shutdown
+- ✅ **Health monitoring**: Continuous status checking and auto-restart
+- ✅ **Windows startup**: Automatic bot start when Windows boots
+
 ## Configuration
 
 ### Channel IDs

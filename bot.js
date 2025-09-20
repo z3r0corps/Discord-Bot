@@ -156,13 +156,47 @@ client.on(Events.GuildMemberRemove, async (member) => {
     }
 });
 
-// Handle errors
+// Handle errors and reconnection
 client.on('error', error => {
     console.error('❌ Discord client error:', error);
 });
 
+client.on('disconnect', () => {
+    console.log('🔌 Bot disconnected from Discord. Attempting to reconnect...');
+});
+
+client.on('reconnecting', () => {
+    console.log('🔄 Bot is reconnecting to Discord...');
+});
+
+client.on('resume', () => {
+    console.log('✅ Bot reconnected to Discord successfully!');
+});
+
+// Handle process errors
 process.on('unhandledRejection', error => {
     console.error('❌ Unhandled promise rejection:', error);
+});
+
+process.on('uncaughtException', error => {
+    console.error('❌ Uncaught exception:', error);
+    // Restart the bot process
+    console.log('🔄 Restarting bot due to uncaught exception...');
+    process.exit(1);
+});
+
+// Handle SIGINT (Ctrl+C) gracefully
+process.on('SIGINT', () => {
+    console.log('🛑 Received SIGINT. Shutting down gracefully...');
+    client.destroy();
+    process.exit(0);
+});
+
+// Handle SIGTERM gracefully
+process.on('SIGTERM', () => {
+    console.log('🛑 Received SIGTERM. Shutting down gracefully...');
+    client.destroy();
+    process.exit(0);
 });
 
 // Add commands to view database stats and user profiles
