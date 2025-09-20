@@ -25,6 +25,9 @@ client.once(Events.ClientReady, async readyClient => {
     
     // Set up verification message
     await setupVerificationMessage();
+    
+    // Set up channel permissions
+    await setupChannelPermissions();
 });
 
 // Set up verification message
@@ -49,8 +52,8 @@ async function setupVerificationMessage() {
         // Create verification embed
         const verificationEmbed = new EmbedBuilder()
             .setTitle('🔐 Server Verification')
-            .setDescription('Welcome to our server! To access all channels, please verify yourself by reacting with ✅ below.')
-            .setColor(0x00ff00)
+            .setDescription('Please verify to gain access to this server')
+            .setColor(0xff0000)
             .setFooter({ text: 'Click the checkmark to verify and get access to the server!' })
             .setTimestamp();
 
@@ -61,6 +64,81 @@ async function setupVerificationMessage() {
         
     } catch (error) {
         console.error('❌ Error setting up verification message:', error);
+    }
+}
+
+// Set up channel permissions
+async function setupChannelPermissions() {
+    try {
+        const verificationChannel = client.channels.cache.get(config.verificationChannelId);
+        const welcomeChannel = client.channels.cache.get(config.welcomeChannelId);
+        const goodbyeChannel = client.channels.cache.get(config.goodbyeChannelId);
+        
+        if (!verificationChannel) {
+            console.error(`❌ Verification channel with ID ${config.verificationChannelId} not found!`);
+            return;
+        }
+
+        // Get the @everyone role
+        const everyoneRole = verificationChannel.guild.roles.everyone;
+        
+        // Set verification channel permissions - everyone can see and send messages
+        await verificationChannel.permissionOverwrites.edit(everyoneRole, {
+            ViewChannel: true,
+            SendMessages: false, // Users can't send messages, only react
+            ReadMessageHistory: true
+        });
+        
+        console.log('✅ Verification channel permissions set up');
+        
+        // Set other channels to be hidden from @everyone by default
+        // Only verified users (with the Verified role) will see them
+        if (welcomeChannel) {
+            await welcomeChannel.permissionOverwrites.edit(everyoneRole, {
+                ViewChannel: false
+            });
+            console.log('✅ Welcome channel hidden from unverified users');
+        }
+        
+        if (goodbyeChannel) {
+            await goodbyeChannel.permissionOverwrites.edit(everyoneRole, {
+                ViewChannel: false
+            });
+            console.log('✅ Goodbye channel hidden from unverified users');
+        }
+        
+        // Set up Verified role permissions for all channels
+        const verifiedRole = verificationChannel.guild.roles.cache.get(config.verifiedRoleId);
+        if (verifiedRole) {
+            // Verification channel - verified users can't see it
+            await verificationChannel.permissionOverwrites.edit(verifiedRole, {
+                ViewChannel: false
+            });
+            
+            // Welcome and goodbye channels - verified users can see them
+            if (welcomeChannel) {
+                await welcomeChannel.permissionOverwrites.edit(verifiedRole, {
+                    ViewChannel: true,
+                    SendMessages: true,
+                    ReadMessageHistory: true
+                });
+            }
+            
+            if (goodbyeChannel) {
+                await goodbyeChannel.permissionOverwrites.edit(verifiedRole, {
+                    ViewChannel: true,
+                    SendMessages: true,
+                    ReadMessageHistory: true
+                });
+            }
+            
+            console.log('✅ Verified role permissions set up');
+        } else {
+            console.log('⚠️ Verified role not found. Please create a "Verified" role.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error setting up channel permissions:', error);
     }
 }
 
@@ -104,8 +182,8 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
                 return;
             }
 
-            // Find the Verified role
-            const verifiedRole = reaction.message.guild.roles.cache.find(role => role.name === config.verifiedRoleName);
+            // Find the Verified role by ID
+            const verifiedRole = reaction.message.guild.roles.cache.get(config.verifiedRoleId);
             
             if (!verifiedRole) {
                 console.error(`❌ Verified role "${config.verifiedRoleName}" not found!`);
@@ -117,6 +195,16 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
             // Assign verified role
             await member.roles.add(verifiedRole);
+            
+            // Hide the verification channel from the user
+            try {
+                await verificationChannel.permissionOverwrites.create(user.id, {
+                    ViewChannel: false
+                });
+                console.log(`🔒 Hidden verification channel from ${user.tag}`);
+            } catch (error) {
+                console.error('❌ Error hiding verification channel:', error);
+            }
             
             // Send welcome message
             const welcomeChannel = client.channels.cache.get(config.welcomeChannelId);

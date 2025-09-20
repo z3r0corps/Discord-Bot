@@ -6,7 +6,7 @@ A simple Discord bot that automatically welcomes new members and says goodbye wh
 
 - 🎉 **Welcome Messages**: Automatically sends "Welcome @user!" when someone joins
 - 👋 **Goodbye Messages**: Automatically sends "Seeya @user!" when someone leaves, gets kicked, or banned
-- 🔐 **Verification System**: Reaction-based verification to prevent bot spam
+- 🔐 **Verification System**: Red verification message with reaction-based verification to prevent bot spam
 - 📊 **User Database**: Local SQLite database to track verified users
 - 🎭 **Role Assignment**: Automatically assigns "Verified" role after verification
 - ⚙️ **Easy Configuration**: Simple config file for channel IDs
@@ -64,11 +64,13 @@ npm install
 ### 5. Set Up Verification System
 
 1. **Create a "Verified" role** in your Discord server
-2. **Set channel permissions** so only verified users can see other channels
-3. **The bot will automatically**:
-   - Post a verification message in the verification channel
+2. **The bot will automatically**:
+   - Set up channel permissions (only verification channel visible to new users)
+   - Post a red verification message: "Please verify to gain access to this server"
    - Add a ✅ reaction to the message
    - Assign the "Verified" role when users react
+   - Hide the verification channel from verified users
+   - Show all other channels to verified users
    - Track verified users in a local database
 
 ### 6. Run the Bot
