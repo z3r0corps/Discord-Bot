@@ -1,0 +1,21 @@
+{
+  "name": "discord-welcome-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot that welcomes new members and says goodbye to leaving members",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["discord", "bot", "welcome", "goodbye"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+
