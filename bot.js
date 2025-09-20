@@ -55,14 +55,8 @@ async function setupVerificationMessage() {
             return;
         }
 
-        // Create verification embed
-        const verificationEmbed = new EmbedBuilder()
-            .setTitle('🔐 Server Verification')
-            .setDescription('Please verify to gain access to this server')
-            .setColor(0xff0000)
-            .setTimestamp();
-
-        const message = await verificationChannel.send({ embeds: [verificationEmbed] });
+        // Create simple verification message
+        const message = await verificationChannel.send('🔐 Please verify to gain access to this server');
         await message.react('✅');
         
         console.log('✅ Verification message created and reaction added');
