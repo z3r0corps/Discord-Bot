@@ -266,7 +266,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
             }
 
             // Add user to database first
-            await database.addUser(user.id, user.tag, null);
+            await database.addUser(user.id, user.tag);
             console.log(`📊 Added ${user.tag} to database`);
 
             // Assign verified role
@@ -413,36 +413,8 @@ client.on(Events.MessageCreate, async (message) => {
         }
     }
     
-    // Set email command for verified users
-    if (message.content.startsWith('!setemail ') && message.member.roles.cache.has(config.verifiedRoleId)) {
-        try {
-            const email = message.content.split(' ').slice(1).join(' ').trim();
-            
-            if (!email || !email.includes('@')) {
-                await message.reply('❌ Please provide a valid email address. Usage: `!setemail your@email.com`');
-                return;
-            }
-            
-            // Update user email in database
-            await updateUserEmail(message.author.id, email);
-            await message.reply(`✅ Email updated to: ${email}`);
-            
-        } catch (error) {
-            console.error('❌ Error setting email:', error);
-            await message.reply('❌ Error updating email. Please try again.');
-        }
-    }
 });
 
-// Update user email function
-async function updateUserEmail(discordId, email) {
-    try {
-        await database.updateUserEmail(discordId, email);
-    } catch (error) {
-        console.error('❌ Error updating user email:', error);
-        throw error;
-    }
-}
 
 // Login to Discord with your client's token
 client.login(process.env.DISCORD_BOT_TOKEN);

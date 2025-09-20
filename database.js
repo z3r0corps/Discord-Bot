@@ -15,7 +15,6 @@ class Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 discord_id TEXT UNIQUE NOT NULL,
                 username TEXT NOT NULL,
-                email TEXT,
                 verified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -24,24 +23,11 @@ class Database {
                 console.error('❌ Error creating users table:', err);
             } else {
                 console.log('✅ Database initialized successfully');
-                this.addEmailColumn();
                 this.ensureUsersDirectory();
             }
         });
     }
 
-    // Add email column to existing tables (migration)
-    addEmailColumn() {
-        this.db.run(`
-            ALTER TABLE users ADD COLUMN email TEXT
-        `, (err) => {
-            if (err && !err.message.includes('duplicate column name')) {
-                console.error('❌ Error adding email column:', err);
-            } else if (!err) {
-                console.log('✅ Added email column to users table');
-            }
-        });
-    }
 
     // Ensure users directory exists
     ensureUsersDirectory() {
@@ -53,18 +39,18 @@ class Database {
     }
 
     // Add a verified user to the database
-    addUser(discordId, username, email = null) {
+    addUser(discordId, username) {
         return new Promise((resolve, reject) => {
             this.db.run(
-                'INSERT OR REPLACE INTO users (discord_id, username, email, verified_at, last_seen) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-                [discordId, username, email],
+                'INSERT OR REPLACE INTO users (discord_id, username, verified_at, last_seen) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                [discordId, username],
                 (err) => {
                     if (err) {
                         console.error('❌ Error adding user to database:', err);
                         reject(err);
                     } else {
                         console.log(`✅ Added user ${username} (${discordId}) to database`);
-                        this.createUserProfileFile(discordId, username, email);
+                        this.createUserProfileFile(discordId, username);
                         resolve(this.lastID);
                     }
                 }
@@ -73,7 +59,7 @@ class Database {
     }
 
     // Create a text file for user profile
-    createUserProfileFile(discordId, username, email = null) {
+    createUserProfileFile(discordId, username) {
         try {
             const usersDir = path.join(__dirname, 'users');
             
@@ -90,7 +76,6 @@ class Database {
 ========================
 Discord ID: ${discordId}
 Username: ${username}
-Email: ${email || 'Not available'}
 Verified At: ${new Date().toISOString()}
 Last Seen: ${new Date().toISOString()}
 Status: Verified ✅
@@ -205,50 +190,6 @@ User verified through reaction-based verification system.`;
         });
     }
 
-    // Update user email
-    updateUserEmail(discordId, email) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'UPDATE users SET email = ? WHERE discord_id = ?',
-                [email, discordId],
-                (err) => {
-                    if (err) {
-                        console.error('❌ Error updating user email:', err);
-                        reject(err);
-                    } else {
-                        console.log(`✅ Updated email for user: ${discordId}`);
-                        this.updateUserProfileFileWithEmail(discordId, email);
-                        resolve(this.changes);
-                    }
-                }
-            );
-        });
-    }
-
-    // Update user profile file with email
-    updateUserProfileFileWithEmail(discordId, email) {
-        try {
-            const usersDir = path.join(__dirname, 'users');
-            const files = fs.readdirSync(usersDir);
-            const userFile = files.find(file => file.startsWith(discordId + '_'));
-            
-            if (userFile) {
-                const filePath = path.join(usersDir, userFile);
-                const content = fs.readFileSync(filePath, 'utf8');
-                
-                // Update the email field
-                const updatedContent = content.replace(
-                    /Email: .*/,
-                    `Email: ${email}`
-                );
-                
-                fs.writeFileSync(filePath, updatedContent, 'utf8');
-                console.log(`✅ Updated email in profile file for user: ${discordId}`);
-            }
-        } catch (error) {
-            console.error('❌ Error updating user profile file with email:', error);
-        }
-    }
 
     // Get all user profile files
     getAllUserProfiles() {
