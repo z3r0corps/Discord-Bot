@@ -1,6 +1,10 @@
 # Environment variables (contains sensitive bot token)
 .env
 
+# User database and profiles (contains user data)
+users.db
+users/
+
 # Node.js dependencies
 node_modules/
 

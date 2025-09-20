@@ -165,10 +165,11 @@ process.on('unhandledRejection', error => {
     console.error('❌ Unhandled promise rejection:', error);
 });
 
-// Add a simple command to view database stats
+// Add commands to view database stats and user profiles
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
     
+    // Stats command
     if (message.content === '!stats' && message.member.permissions.has('Administrator')) {
         try {
             const users = await database.getAllUsers();
@@ -194,6 +195,68 @@ client.on(Events.MessageCreate, async (message) => {
         } catch (error) {
             console.error('❌ Error getting stats:', error);
             await message.reply('❌ Error retrieving statistics.');
+        }
+    }
+    
+    // Profile command - view specific user profile
+    if (message.content.startsWith('!profile ') && message.member.permissions.has('Administrator')) {
+        try {
+            const userId = message.content.split(' ')[1];
+            const userProfile = await database.getUserProfile(userId);
+            
+            if (!userProfile) {
+                await message.reply('❌ User not found in database.');
+                return;
+            }
+            
+            const embed = new EmbedBuilder()
+                .setTitle('👤 User Profile')
+                .setColor(0x00ff00)
+                .addFields(
+                    { name: 'Discord ID', value: userProfile.discord_id, inline: true },
+                    { name: 'Username', value: userProfile.username, inline: true },
+                    { name: 'Verified At', value: `<t:${Math.floor(new Date(userProfile.verified_at).getTime() / 1000)}:F>`, inline: false },
+                    { name: 'Last Seen', value: `<t:${Math.floor(new Date(userProfile.last_seen).getTime() / 1000)}:R>`, inline: true }
+                )
+                .setTimestamp();
+            
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('❌ Error getting user profile:', error);
+            await message.reply('❌ Error retrieving user profile.');
+        }
+    }
+    
+    // List profiles command
+    if (message.content === '!profiles' && message.member.permissions.has('Administrator')) {
+        try {
+            const profileFiles = database.getAllUserProfiles();
+            
+            if (profileFiles.length === 0) {
+                await message.reply('📁 No user profiles found.');
+                return;
+            }
+            
+            const embed = new EmbedBuilder()
+                .setTitle('📁 User Profile Files')
+                .setDescription(`Found **${profileFiles.length}** user profile files in the users folder.`)
+                .setColor(0x0099ff)
+                .setTimestamp();
+            
+            const fileList = profileFiles.slice(0, 10).map(file => 
+                `• ${file.filename}`
+            ).join('\n');
+            
+            embed.addFields({
+                name: 'Profile Files',
+                value: fileList + (profileFiles.length > 10 ? `\n... and ${profileFiles.length - 10} more` : ''),
+                inline: false
+            });
+            
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('❌ Error getting profile files:', error);
+            await message.reply('❌ Error retrieving profile files.');
         }
     }
 });
