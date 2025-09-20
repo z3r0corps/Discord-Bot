@@ -176,7 +176,7 @@ This bot operates automatically with one admin command:
 - ✅ **Automatic database tracking**: Saves user profiles
 - ✅ **Automatic welcome/goodbye messages**: Posts when users join/leave
 - ✅ **Automatic forex news**: Daily high-impact USD news at 6 AM EST
-- ✅ **Manual forex news**: `!forex-news` command for testing (Admin only)
+- ✅ **Manual forex news**: `!news` command for testing (Admin only)
 
 ## Database & User Profiles
 

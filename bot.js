@@ -403,7 +403,7 @@ client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
     
     // Manual forex news command (admin only)
-    if (message.content === '!forex-news' && message.member.permissions.has('Administrator')) {
+    if (message.content === '!news' && message.member.permissions.has('Administrator')) {
         try {
             await message.reply('📊 Fetching forex news...');
             await postForexNews();
