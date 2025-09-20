@@ -46,15 +46,22 @@ async function setupVerificationMessage() {
 
         // Check if verification message already exists
         const messages = await verificationChannel.messages.fetch({ limit: 10 });
-        const existingMessage = messages.find(msg => msg.author.id === client.user.id && msg.content.includes('🔐 Please verify'));
+        const existingMessage = messages.find(msg => msg.author.id === client.user.id && msg.embeds.length > 0 && msg.embeds[0].title === '🔐 Server Verification');
 
         if (existingMessage) {
             console.log('✅ Verification message already exists');
             return;
         }
 
-        // Create simple verification message
-        const message = await verificationChannel.send('🔐 Please verify to gain access to this server');
+        // Create professional verification embed
+        const verificationEmbed = new EmbedBuilder()
+            .setTitle('🔐 Server Verification')
+            .setDescription('Please verify to gain access to this server')
+            .setColor(0xff0000)
+            .setFooter({ text: 'Click the checkmark below to verify' })
+            .setTimestamp();
+
+        const message = await verificationChannel.send({ embeds: [verificationEmbed] });
         await message.react('✅');
         
         console.log('✅ Verification message created and reaction added');
