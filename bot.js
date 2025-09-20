@@ -23,9 +23,11 @@ client.once(Events.ClientReady, async readyClient => {
     console.log(`📋 Bot ID: ${readyClient.user.id}`);
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
-    // Set custom activity
-    client.user.setActivity('with Minors', { type: 'PLAYING' });
-    console.log('🎮 Set bot activity to "Playing with Minors"');
+    // Set custom activity (wait a moment for bot to be fully ready)
+    setTimeout(() => {
+        client.user.setActivity('with Minors', { type: 'PLAYING' });
+        console.log('🎮 Set bot activity to "Playing with Minors"');
+    }, 2000);
     
     // Set up verification message
     await setupVerificationMessage();
@@ -58,7 +60,6 @@ async function setupVerificationMessage() {
             .setTitle('🔐 Server Verification')
             .setDescription('Please verify to gain access to this server')
             .setColor(0xff0000)
-            .setFooter({ text: 'Click the checkmark to verify and get access to the server!' })
             .setTimestamp();
 
         const message = await verificationChannel.send({ embeds: [verificationEmbed] });
