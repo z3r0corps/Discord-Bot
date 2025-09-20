@@ -6,6 +6,9 @@ A simple Discord bot that automatically welcomes new members and says goodbye wh
 
 - 🎉 **Welcome Messages**: Automatically sends "Welcome @user!" when someone joins
 - 👋 **Goodbye Messages**: Automatically sends "Seeya @user!" when someone leaves, gets kicked, or banned
+- 🔐 **Verification System**: Reaction-based verification to prevent bot spam
+- 📊 **User Database**: Local SQLite database to track verified users
+- 🎭 **Role Assignment**: Automatically assigns "Verified" role after verification
 - ⚙️ **Easy Configuration**: Simple config file for channel IDs
 - 🛡️ **Error Handling**: Robust error handling and logging
 
@@ -56,8 +59,19 @@ npm install
 3. The channel IDs are already configured in `config.json`:
    - Welcome Channel: `1418953168016113725`
    - Goodbye Channel: `1418953196340252786`
+   - Verification Channel: `1418984559474901013`
 
-### 5. Run the Bot
+### 5. Set Up Verification System
+
+1. **Create a "Verified" role** in your Discord server
+2. **Set channel permissions** so only verified users can see other channels
+3. **The bot will automatically**:
+   - Post a verification message in the verification channel
+   - Add a ✅ reaction to the message
+   - Assign the "Verified" role when users react
+   - Track verified users in a local database
+
+### 6. Run the Bot
 
 ```bash
 npm start
@@ -66,6 +80,12 @@ npm start
 For development with auto-restart:
 ```bash
 npm run dev
+```
+
+For 24/7 operation with PM2:
+```bash
+pm2 start ecosystem.config.js
+pm2 save
 ```
 
 ## Configuration
@@ -86,6 +106,22 @@ Edit `config.json` to change the welcome and goodbye channels:
 1. Enable Developer Mode in Discord (User Settings > Advanced > Developer Mode)
 2. Right-click on the channel you want
 3. Click "Copy ID"
+
+## Commands
+
+- `!stats` - View server statistics (Admin only)
+  - Shows total verified users
+  - Displays recent verifications
+
+## Database
+
+The bot uses a local SQLite database (`users.db`) to track:
+- User Discord IDs
+- Usernames
+- Verification timestamps
+- Last seen timestamps
+
+The database is automatically created when the bot starts.
 
 ## Bot Permissions Required
 
