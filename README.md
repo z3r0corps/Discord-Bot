@@ -177,12 +177,14 @@ This bot operates automatically with one admin command:
 - ✅ **Automatic welcome/goodbye messages**: Posts when users join/leave
 - ✅ **Automatic forex news**: Daily high-impact USD news at 6 AM EST
 - ✅ **Manual forex news**: `!news` command for testing (Admin only)
+- ✅ **Email management**: `!setemail` command for verified users to add their email
 
 ## Database & User Profiles
 
 The bot uses a local SQLite database (`users.db`) to track:
 - User Discord IDs
 - Usernames
+- Email addresses (optional, set by users)
 - Verification timestamps
 - Last seen timestamps
 
@@ -190,6 +192,7 @@ The bot uses a local SQLite database (`users.db`) to track:
 
 Each verified user gets a text file in the `users/` folder containing:
 - Discord ID and username
+- Email address (if provided by user)
 - Verification timestamp
 - Last seen timestamp
 - Profile creation date
@@ -197,12 +200,22 @@ Each verified user gets a text file in the `users/` folder containing:
 
 **File naming format**: `{discord_id}_{username}.txt`
 
+### Email Management
+
+Verified users can set their email address using:
+```
+!setemail your@email.com
+```
+
+**Note**: Discord's API doesn't provide access to user emails for privacy reasons, so users must manually set their email using this command.
+
 **Example file content**:
 ```
 DISCORD USER PROFILE
 ========================
 Discord ID: 123456789012345678
 Username: ExampleUser
+Email: user@example.com
 Verified At: 2024-01-01T12:00:00.000Z
 Last Seen: 2024-01-01T12:00:00.000Z
 Status: Verified ✅
