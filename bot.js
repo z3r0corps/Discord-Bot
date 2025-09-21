@@ -27,8 +27,8 @@ client.once(Events.ClientReady, async readyClient => {
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
     // Set custom activity immediately
-    client.user.setActivity('with Minors', { type: 'PLAYING' });
-    console.log('🎮 Set bot activity to "Playing with Minors"');
+    client.user.setActivity('with Forex Markets', { type: 'WATCHING' });
+    console.log('🎮 Set bot activity to "Watching Forex Markets"');
     
     // Set up verification message
     await setupVerificationMessage();

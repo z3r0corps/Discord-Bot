@@ -7,11 +7,15 @@
     "start": "node bot.js",
     "dev": "nodemon bot.js",
     "monitor": "node health-monitor.js",
+    "wifi-monitor": "node wifi-monitor.js",
+    "service": "node discord-bot-service.js",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop discord-bot",
     "pm2:restart": "pm2 restart discord-bot",
     "pm2:status": "pm2 status",
-    "pm2:logs": "pm2 logs discord-bot"
+    "pm2:logs": "pm2 logs discord-bot",
+    "setup:autostart": "setup-complete-autostart.bat",
+    "setup:advanced": "setup-advanced-autostart.bat"
   },
   "keywords": [
     "discord",
