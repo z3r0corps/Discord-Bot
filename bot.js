@@ -21,6 +21,9 @@ const client = new Client({
 const database = new Database();
 const forexScraper = new ForexScraper();
 
+// Initialize self-keepalive system
+const SelfKeepAlive = require('./self-keepalive');
+
 // Create Express app for health checks
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +47,14 @@ app.get('/ping', (req, res) => {
 // Start the web server
 app.listen(PORT, () => {
     console.log(`🌐 Health check server running on port ${PORT}`);
+    
+    // Start self-keepalive system
+    const botUrl = `http://localhost:${PORT}`;
+    const keepAlive = new SelfKeepAlive(botUrl);
+    keepAlive.start();
+    
+    // Store reference for status commands
+    global.keepAlive = keepAlive;
 });
 
 // When the client is ready, run this code (only once)
@@ -540,10 +551,38 @@ client.on(Events.MessageCreate, async (message) => {
             }
             
             const commits = stdout.split('\n').filter(line => line.trim());
-            const status = `📊 **Bot Status**\n\n**Recent Updates:**\n${commits.map(commit => `• ${commit}`).join('\n')}`;
+            const keepAliveStatus = global.keepAlive ? global.keepAlive.getStatus() : null;
+            
+            let status = `📊 **Bot Status**\n\n**Recent Updates:**\n${commits.map(commit => `• ${commit}`).join('\n')}`;
+            
+            if (keepAliveStatus) {
+                status += `\n\n**Keep-Alive Status:**\n• Pings: ${keepAliveStatus.pingCount}\n• Last Ping: ${keepAliveStatus.lastPingTime ? keepAliveStatus.lastPingTime.toLocaleTimeString() : 'Never'}\n• Failures: ${keepAliveStatus.consecutiveFailures}`;
+            }
             
             message.reply(status);
         });
+    }
+    
+    // Keep-alive status command
+    if (message.content === '!keepalive') {
+        if (!global.keepAlive) {
+            return message.reply('❌ Keep-alive system not running');
+        }
+        
+        const status = global.keepAlive.getStatus();
+        const embed = new EmbedBuilder()
+            .setTitle('🔄 Keep-Alive Status')
+            .addFields(
+                { name: 'Status', value: status.isRunning ? '✅ Running' : '❌ Stopped', inline: true },
+                { name: 'Ping Count', value: status.pingCount.toString(), inline: true },
+                { name: 'Last Ping', value: status.lastPingTime ? status.lastPingTime.toLocaleTimeString() : 'Never', inline: true },
+                { name: 'Consecutive Failures', value: status.consecutiveFailures.toString(), inline: true },
+                { name: 'Bot URL', value: status.botUrl, inline: false }
+            )
+            .setColor(status.isRunning ? 0x00ff00 : 0xff0000)
+            .setTimestamp();
+        
+        message.reply({ embeds: [embed] });
     }
 });
 
