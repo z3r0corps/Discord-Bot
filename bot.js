@@ -63,6 +63,8 @@ client.once(Events.ClientReady, async readyClient => {
     console.log(`📋 Bot ID: ${readyClient.user.id}`);
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
+    // Set up live market status activity
+    setupLiveMarketActivity();
     
     // Set up verification message
     await setupVerificationMessage();
@@ -201,6 +203,50 @@ async function setupChannelPermissions() {
     }
 }
 
+
+// Set up live market activity status
+function setupLiveMarketActivity() {
+    const VolatilityTracker = require('./volatility-tracker');
+    const tracker = new VolatilityTracker();
+    
+    // Update activity every 2 minutes
+    setInterval(async () => {
+        try {
+            const summary = await tracker.getMarketSummary();
+            
+            if (summary.hasRealData && summary.volatilities) {
+                // Market is open - show live NQ/ES data
+                const nqVol = summary.volatilities.NQ.toFixed(1);
+                const esVol = summary.volatilities.ES.toFixed(1);
+                client.user.setActivity(`NQ:${nqVol}% ES:${esVol}%`, { type: 'WATCHING' });
+            } else {
+                // Market is closed
+                client.user.setActivity('Market Closed', { type: 'WATCHING' });
+            }
+        } catch (error) {
+            console.error('❌ Error updating market activity:', error);
+            client.user.setActivity('Market Data Error', { type: 'WATCHING' });
+        }
+    }, 2 * 60 * 1000); // Update every 2 minutes
+    
+    // Initial activity update
+    setTimeout(async () => {
+        try {
+            const summary = await tracker.getMarketSummary();
+            if (summary.hasRealData && summary.volatilities) {
+                const nqVol = summary.volatilities.NQ.toFixed(1);
+                const esVol = summary.volatilities.ES.toFixed(1);
+                client.user.setActivity(`NQ:${nqVol}% ES:${esVol}%`, { type: 'WATCHING' });
+            } else {
+                client.user.setActivity('Market Closed', { type: 'WATCHING' });
+            }
+        } catch (error) {
+            client.user.setActivity('Market Data Loading...', { type: 'WATCHING' });
+        }
+    }, 5000); // Initial update after 5 seconds
+    
+    console.log('📊 Live market activity status enabled - updates every 2 minutes');
+}
 
 // Set up forex news scheduler
 function setupForexNewsScheduler() {
