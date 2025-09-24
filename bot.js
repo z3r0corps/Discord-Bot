@@ -3,6 +3,7 @@ const config = require('./config.json');
 const Database = require('./database');
 const ForexScraper = require('./forex-scraper');
 const cron = require('node-cron');
+const express = require('express');
 require('dotenv').config();
 
 // Create a new client instance
@@ -20,15 +21,37 @@ const client = new Client({
 const database = new Database();
 const forexScraper = new ForexScraper();
 
+// Create Express app for health checks
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'online',
+        bot: client.user ? client.user.tag : 'Starting...',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        guilds: client.guilds ? client.guilds.cache.size : 0
+    });
+});
+
+// Ping endpoint for uptime monitoring
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
+// Start the web server
+app.listen(PORT, () => {
+    console.log(`🌐 Health check server running on port ${PORT}`);
+});
+
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, async readyClient => {
     console.log(`✅ Bot is ready! Logged in as ${readyClient.user.tag}`);
     console.log(`📋 Bot ID: ${readyClient.user.id}`);
     console.log(`🏠 Connected to ${client.guilds.cache.size} server(s)`);
     
-    // Set custom activity immediately
-    client.user.setActivity('with Forex Markets', { type: 'WATCHING' });
-    console.log('🎮 Set bot activity to "Watching Forex Markets"');
     
     // Set up verification message
     await setupVerificationMessage();
@@ -166,6 +189,7 @@ async function setupChannelPermissions() {
         console.error('❌ Error setting up channel permissions:', error);
     }
 }
+
 
 // Set up forex news scheduler
 function setupForexNewsScheduler() {
@@ -402,8 +426,14 @@ process.on('SIGTERM', () => {
 client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
     
-    // Manual forex news command (admin only)
-    if (message.content === '!news' && message.member.permissions.has('Administrator')) {
+    // Manual forex news command (verified users only)
+    if (message.content === '!news') {
+        // Check if user is verified
+        const isVerified = await database.isUserVerified(message.author.id);
+        if (!isVerified) {
+            await message.reply('❌ You need to be verified to use this command. Please verify first!');
+            return;
+        }
         try {
             await message.reply('📊 Fetching forex news...');
             await postForexNews();
@@ -413,6 +443,108 @@ client.on(Events.MessageCreate, async (message) => {
         }
     }
     
+    // Volatility tracker command
+    if (message.content === '!volatility') {
+        const isVerified = await database.isUserVerified(message.author.id);
+        if (!isVerified) {
+            await message.reply('❌ You need to be verified to use this command. Please verify first!');
+            return;
+        }
+        
+        try {
+            const VolatilityTracker = require('./volatility-tracker');
+            const tracker = new VolatilityTracker();
+            
+            const marketData = await tracker.getBothVolatilities();
+            const summary = await tracker.getMarketSummary();
+            
+            const embed = new EmbedBuilder()
+                .setTitle('📊 Market Volatility')
+                .setDescription(summary.status)
+                .addFields(
+                    { name: 'NQ (Nasdaq 100)', value: `${marketData.NQ.toFixed(2)}%`, inline: true },
+                    { name: 'ES (S&P 500)', value: `${marketData.ES.toFixed(2)}%`, inline: true },
+                    { name: 'Market Status', value: summary.marketStatus, inline: true }
+                )
+                .setColor(0x00ff00)
+                .setTimestamp();
+            
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('❌ Error in volatility command:', error);
+            await message.reply('❌ Error fetching volatility data.');
+        }
+    }
+    
+    // Market summary command
+    if (message.content === '!market') {
+        const isVerified = await database.isUserVerified(message.author.id);
+        if (!isVerified) {
+            await message.reply('❌ You need to be verified to use this command. Please verify first!');
+            return;
+        }
+        
+        try {
+            const VolatilityTracker = require('./volatility-tracker');
+            const tracker = new VolatilityTracker();
+            
+            const summary = await tracker.getMarketSummary();
+            
+            const embed = new EmbedBuilder()
+                .setTitle('📈 Market Summary')
+                .setDescription(summary.status)
+                .addFields(
+                    { name: 'Status', value: summary.marketStatus, inline: true },
+                    { name: 'Real Data', value: summary.hasRealData ? '✅ Yes' : '❌ No', inline: true }
+                )
+                .setColor(summary.hasRealData ? 0x00ff00 : 0xff0000)
+                .setTimestamp();
+            
+            await message.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('❌ Error in market command:', error);
+            await message.reply('❌ Error fetching market data.');
+        }
+    }
+    
+    // Bot update command (admin only)
+    if (message.content === '!update') {
+        if (!message.member.permissions.has('ADMINISTRATOR')) {
+            await message.reply('❌ Only administrators can update the bot.');
+            return;
+        }
+        
+        await message.reply('🔄 Updating bot...');
+        
+        const { exec } = require('child_process');
+        exec('git pull origin main', (error, stdout, stderr) => {
+            if (error) {
+                return message.reply('❌ Update failed: ' + error.message);
+            }
+            
+            if (stdout.includes('Already up to date')) {
+                return message.reply('✅ Bot is already up to date');
+            }
+            
+            message.reply('✅ Bot updated successfully - restarting...');
+            process.exit(0);
+        });
+    }
+    
+    // Bot status command
+    if (message.content === '!status') {
+        const { exec } = require('child_process');
+        exec('git log --oneline -5', (error, stdout, stderr) => {
+            if (error) {
+                return message.reply('❌ Unable to get status');
+            }
+            
+            const commits = stdout.split('\n').filter(line => line.trim());
+            const status = `📊 **Bot Status**\n\n**Recent Updates:**\n${commits.map(commit => `• ${commit}`).join('\n')}`;
+            
+            message.reply(status);
+        });
+    }
 });
 
 
